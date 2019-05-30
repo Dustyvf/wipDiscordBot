@@ -9,11 +9,11 @@ import (
 // wip, command struct, used for command info, may revamp later to include more info on stuff
 type cmd struct {
 	execute   func(args []string, s disgord.Session, d *disgord.MessageCreate) error // function for command
-	name      string // name of command, currently irrelevent, only used to check if the command exists
-	longdesc  string // unimplemented long description to be used for help system
-	shortdesc string // unimplemented short description, to be used for tldr help
-	man       []string // unimplemented multipage manual for help system, probably only to be used for complex commands
-	parent    string // unimplemented, to be used for defining the parent command for aliases
+	name      string                                                                 // name of command, currently irrelevent, only used to check if the command exists
+	longdesc  string                                                                 // unimplemented long description to be used for help system
+	shortdesc string                                                                 // unimplemented short description, to be used for tldr help
+	man       []string                                                               // unimplemented multipage manual for help system, probably only to be used for complex commands
+	parent    string                                                                 // unimplemented, to be used for defining the parent command for aliases
 }
 
 // main map of commands
@@ -50,7 +50,7 @@ func commandfork(in, prefix string) (string, []string) {
 
 }
 
-// check if input contains prefix, supports multiple prefixes, 
+// check if input contains prefix, supports multiple prefixes,
 // returns whether or not it does have a prefix and due to supporting mutliple prefixes in an array also returns the prefix
 func prefixCheck(in string, prefix []string) (bool, string) {
 	input := strings.ToLower(in)
@@ -92,7 +92,7 @@ func main() {
 			if cmdmap[command].name != "" {
 				cmdmap[command].execute(args, session, data)
 			}
-		}	
+		}
 	})
 
 	discord.DisconnectOnInterrupt()
