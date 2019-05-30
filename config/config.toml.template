@@ -1,0 +1,11 @@
+[auth]
+token = "TOKEN GOES HERE"
+
+[config]
+prefix = [ 
+"b!", 
+"!" 
+]
+
+[debug]
+loglevel = "ALL"
