@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/andersfylling/disgord"
 	"strings"
 )
@@ -24,13 +23,13 @@ func init() {
 	cmdmap["ping"] = cmd{
 		name: "currently this is irrelevent as long as something is in here",
 		execute: func(args []string, session disgord.Session, data *disgord.MessageCreate) error {
-			data.Message.RespondString(session, "Pong!")
-			return nil
+			_, err := data.Message.Reply(session, "Pong!")
+			return err
 		},
 	}
 }
 
-// thingy for pharsing the command, trimming off the prefix (split into seperate function?) and forking all the args into a string array
+// thingy for parsing the command, trimming off the prefix (split into separate function?) and forking all the args into a string array
 func commandfork(in, prefix string) (string, []string) {
 	input := []rune(in)
 
@@ -51,7 +50,7 @@ func commandfork(in, prefix string) (string, []string) {
 }
 
 // check if input contains prefix, supports multiple prefixes,
-// returns whether or not it does have a prefix and due to supporting mutliple prefixes in an array also returns the prefix
+// returns whether or not it does have a prefix and due to supporting multiple prefixes in an array also returns the prefix
 func prefixCheck(in string, prefix []string) (bool, string) {
 	input := strings.ToLower(in)
 	for i := 0; i < len(prefix); i++ {
@@ -67,33 +66,43 @@ func commandHandler() {
 
 }
 
+// hasPrefix is a disgord middleware to ensure that any incoming
+// new messages contains at least one of the prefixes. Otherwise the
+// handler will not be executed.
+func hasPrefix(evt interface{}) interface{} {
+	msgEvt := evt.(*disgord.MessageCreate)
+	if a, _ := prefixCheck(msgEvt.Message.Content, gconf.Config.Prefix); a {
+		return evt
+	}
+
+	// if nil is returned, this sends a signal to disgord
+	// that the middleware denied the message content
+	return nil
+}
+
 // main function
 func main() {
-	discord, err := disgord.NewClient(&disgord.Config{
+	discord := disgord.New(&disgord.Config{
 		BotToken: gconf.Auth.Token,
 		Logger:   disgord.DefaultLogger(false),
 	})
-	if err != nil {
-		panic(err)
-	}
+	defer func() {
+		if err := discord.StayConnectedUntilInterrupted(); err != nil {
+			panic(err)
+		}
+	}()
 
-	err = discord.Connect()
-	if err != nil {
-		panic(err)
-	}
+	discord.On(disgord.EvtMessageCreate, hasPrefix, func(session disgord.Session, data *disgord.MessageCreate) {
+		_, pre := prefixCheck(data.Message.Content, gconf.Config.Prefix)
+		command, args := commandfork(data.Message.Content, pre)
+		session.Logger().Info(command, " | ", args, " | ", len(args))
 
-	discord.On(disgord.EvtMessageCreate, func(session disgord.Session, data *disgord.MessageCreate) {
-		a, pre := prefixCheck(data.Message.Content, gconf.Config.Prefix)
-		if a {
-			command, args := commandfork(data.Message.Content, pre)
+		if cmdmap[command].name != "" {
+			return // stop
+		}
 
-			fmt.Println(command, " | ", args, " | ", len(args))
-
-			if cmdmap[command].name != "" {
-				cmdmap[command].execute(args, session, data)
-			}
+		if err := cmdmap[command].execute(args, session, data); err != nil {
+			session.Logger().Error(err)
 		}
 	})
-
-	discord.DisconnectOnInterrupt()
 }
