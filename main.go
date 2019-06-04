@@ -97,7 +97,7 @@ func main() {
 		command, args := commandfork(data.Message.Content, pre)
 		session.Logger().Info(command, " | ", args, " | ", len(args))
 
-		if cmdmap[command].name != "" {
+		if cmdmap[command].name == "" {
 			return // stop
 		}
 
